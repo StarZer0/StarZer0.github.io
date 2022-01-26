@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Vue 组件间通信的方式 | star_zer0</title>
+<meta name="description" content="">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://starzer0.github.io/favicon.ico?v=1570607973011">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://starzer0.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://starzer0.github.io">
+        <img src="https://starzer0.github.io/images/avatar.png?v=1570607973011" class="site-logo">
+        <h1 class="site-title">star_zer0</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://starzer0.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Vue 组件间通信的方式</h2>
+            <div class="post-date">2019-09-29</div>
+            
+            <div class="post-content">
+              <h2 id="简介">简介</h2>
+<p>vue 组件间的通信，也就是如何实现 vue 组件间的传值和事件的触发。包括父子组件间通信，兄弟组件间通信，祖孙组件间通信等。</p>
+<h2 id="1-v-bind-props-实现父组件向子组件通信">1. v-bind / props 实现父组件向子组件通信</h2>
+<pre><code>// Parent.vue
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;Child :userInfo=&quot;userInfo&gt;&lt;/Child&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+...
+
+// Child.vue
+
+...
+export default {
+  name: 'Child',
+
+  props: {
+    userInfo: {
+      type: Object,
+      default () {
+        return {}
+      }
+    }
+  },
+
+  watch: {
+    userInfo (userInfo) {
+      console.log('watch userInfo change', userInfo);
+    }
+  },
+
+  computed: {
+    permissions() {
+      return this.userInfo.permissions || []
+    }
+  }
+}
+
+
+</code></pre>
+<p>父组件可以通过 v-bind:userInfo 的方式向子组件传递数据，而子组件则通过 porps 接收父组件传递过来的参数。</p>
+<p>由于 vue 本身并不提倡在子组件内部直接修改 props 中的数据，这是因为当整个项目变得庞大时，直接修改 props 中的数据并不利于维护，会导致我们不能确定在哪个地方修改了数据，发生一些意料之外的 bug。</p>
+<p>所以我们可以通过 watch 的方式来监听 props 数据的改变，从而做出相应的变化；同时，对于一些不必要修改的参数，我们也可以通过 computed 计算属性的方式来获取。</p>
+<h2 id="2-emit-v-on-实现子组件向父组件通信">2. $emit / v-on 实现子组件向父组件通信</h2>
+<p>vue 官网对 <a href="https://cn.vuejs.org/v2/api/#vm-emit">$emit</a> 的解释</p>
+<blockquote>
+<p>vm.$emit( eventName, […args] )</p>
+<ul>
+<li>参数
+<ul>
+<li>{string} eventName</li>
+<li>[...args]</li>
+</ul>
+</li>
+</ul>
+<p>触发当前实例上的事件。附加参数都会传给监听器回调。</p>
+</blockquote>
+<p>$emit 可以监听当前实例上的自定义事件,第一个参数为自定义事件名称，后面的参数为传入回调函数的参数。<br>
+当前组件内部通过调用 $emit 触发实例上的自定义事件，而父组件则通过 v-on 的方式为该自定义事件注册相应的回调。</p>
+<pre><code>// Child.vue
+
+...
+export default {
+  name: 'Child',
+
+  methods: {
+    handleClick () {
+      this.$emit('item-click', 'click item...')
+    }
+  }
+}
+
+// parent.vue
+
+&lt;template&gt;
+  &lt;div&quot;&gt;
+    &lt;Child @item-click=&quot;handleItem&quot;&gt;&lt;/Child&gt;
+  &lt;/div&quot;&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+...
+export default {
+  name: 'Parent',
+
+  methods: {
+    handleItem　(msg) {
+      console.log(msg);
+    }
+  }
+}
+&lt;/script&gt;
+
+</code></pre>
+<h2 id="3-event-bus-事件总线-实现任意层级组件间通信">3. Event Bus 事件总线 实现任意层级组件间通信</h2>
+<p>Vue 在官方文档中提供了一种事件总线 Event Bus 的方式来实现不同层级间组件通信的功能。</p>
+<blockquote>
+<p>vm.$on( event, callback )</p>
+<ul>
+<li>
+<p>参数</p>
+<ul>
+<li>{string | Array<string>} event (数组只在 2.2.0+ 中支持)</li>
+<li>{Function} callback</li>
+</ul>
+</li>
+<li>
+<p>用法:<br>
+监听当前实例上的自定义事件。事件可以由 vm.$emit 触发。回调函数会接收所有传入事件触发函数的额外参数。</p>
+</li>
+</ul>
+</blockquote>
+<p>Event Bus 的核心思想是通过单独创建一个 Vue 的实例---bus, 并将该实例挂载到 Vue 的原型对象上，然后我们在组件中可以通过 this.bus.$on 的方式为 bus 监听一个自定义事件，事件的回调函数为当前组件实例的方法；当我们在其他地方需要进行数据传递等操作时，就可以通过 this.bus.$emit 的方式来触发 bus 对象上的自定义事件，从而调用挂载的回调函数，实现组件间的通信。</p>
+<pre><code>// main.js
+...
+const bus = new Vue();
+Vue.prototype.bus = bus;
+...
+
+// componentA.vue
+...
+export default {
+  data() {
+    return {
+      msg: '这是一段信息...'
+    }
+  },
+
+  methods: {
+    msgChange (msg) {
+      this.msg = msg;
+    }
+  },
+
+  created () {
+    this.bus.$on('msgChange', this.msgChange);
+  },
+
+  destroyed () {
+    this.bus.$off('msgChange', this.msgChange);
+  }
+}
+
+// componentB.vue
+...
+export default {
+  ...
+  methods: {
+    handleClick () {
+      this.bus.$emit('msgChange', '信息改变啦...');
+    }
+  }
+}
+
+</code></pre>
+<p>当我们在 componentB 组件中调用 handleClick 方法时，只要 componentA 组件为 bus 注册了 msgChange 方法,那么就会执行相应的回调函数。而相应的，处于性能考虑，我们应该在组件销毁时，通过$off 移除组件内绑定的事件。</p>
+<p>当然，这种方式通过将 bus 挂载到 Vue.prototype 上，实现了任意位置都可以通过 this.bus 的方式来访问这个对象，但是，绝大部分时候我们不需要来调用 bus 挂载方法。</p>
+<p>所以，我们可以单独写一个 js 文件，实例化一个 vue 对象并导出，在需要执行 Event Bus 机制的地方引入即可。这种方式符合按需引入的要求，也更加优雅。</p>
+<pre><code>// Bus.js
+import Vue from 'vue';
+export default new Vue();
+
+// componentA.vue
+...
+import Bus from 'Bus'
+export default {
+  ...
+  created () {
+    Bus.$on('msgChange', this.msgChange);
+  }
+}
+...
+</code></pre>
+<h2 id="4-vuex-状态管理">4. <a href="https://vuex.vuejs.org/zh/">Vuex</a> 状态管理</h2>
+<blockquote>
+<p>Vuex 是一个专为 Vue.js 应用程序开发的状态管理模式。它采用集中式存储管理应用的所有组件的状态，并以相应的规则保证状态以一种可预测的方式发生变化。</p>
+</blockquote>
+<p>Vuex 实现了状态的统一管理，各个组件之间只能通过特定的方法才能修改数据，让数据的变化流向更加清晰。</p>
+<h2 id="5-provide-inject">5. provide / inject</h2>
+<p>当我们的项目并不是很大的时候，一般我们并不会使用 vuex 来做状态管理。</p>
+<p>这种时候如果我们在很多组件中都需要获取一些基本数据，例如：用户信息等。我们要么选择重新调用接口获取数据，要么通过 props 传递。</p>
+<p>但是这两种方式都有各自的弊端，重新调用接口的话，可能我们每使用一次该组件都会去调用，短时间内可能会有大量的同一接口调用，这无疑会占用大量服务器资源；而通过 props 去传递数据的话，一旦组件层级过深，代码阅读起来也不那么优雅。</p>
+<p>而 vue 在 2.2.0+的版本中，新提供了一个 api: provide/inject</p>
+<blockquote>
+<p>provide / inject</p>
+<ul>
+<li>
+<p>类型</p>
+<ul>
+<li>provide：Object | () =&gt; Object</li>
+<li>inject：Array<string> | { [key: string]: string | Symbol | Object }</li>
+</ul>
+</li>
+<li>
+<p>详细:<br>
+provide 和 inject 主要为高阶插件/组件库提供用例。并不推荐直接用于应用程序代码中。</p>
+</li>
+</ul>
+<p>这对选项需要一起使用，以允许一个祖先组件向其所有子孙后代注入一个依赖，不论组件层次有多深，并在起上下游关系成立的时间里始终生效。如果你熟悉 React，这与 React 的上下文特性很相似。<br>
+provide 选项应该是一个对象或返回一个对象的函数。该对象包含可注入其子孙的属性。在该对象中你可以使用 ES2015 Symbols 作为 key，但是只在原生支持 Symbol 和 Reflect.ownKeys 的环境下可工作。</p>
+<ul>
+<li>提示：<br>
+provide 和 inject 绑定并不是可响应的。这是刻意为之的。然而，如果你传入了一个可监听的对象，那么其对象的属性还是可响应的。</li>
+</ul>
+</blockquote>
+<p>provide 允许祖先组件向后代组件注入一个依赖，并且不论组件的层级深浅。</p>
+<p>也就是说，不管组件的嵌套层级多深，我们都可以通过 inject 接收祖先组件 provide 提供的参数，这种方式无疑解决了上面嵌套层级过多重复书写 props 以及重复调用接口的弊端。</p>
+<pre><code>// app.vue
+...
+export default {
+  provide: {
+    appName: 'vue'
+  }
+}
+...
+
+// app.vue -&gt; a.vue -&gt; b.vue -&gt; ... -&gt; z.vue
+...
+export default {
+  inject: ['appName'],
+
+  methods: {
+    showAppName () {
+      console.log(this.appName);  // 'vue'
+    }
+  }
+}
+</code></pre>
+<p>当然，我们也要注意的是，官方文档提示，provide/inject 绑定并不是可响应的，这是刻意为之的。这也意味着，当我们异步获取数据为 appName 赋值后，后代组件获取的 appName 值并没有变成更新后的值。</p>
+<p>当然，官方文档也说了，我们如果传入了一个可监听的对象，那么其对象的属性还是可响应的，也就是说，我们还是可以提供一个动态的值，并且这个值的变化，任何后代组件也会捕获。</p>
+<pre><code>// app.vue
+...
+export default {
+  provide() {
+    return {
+      rootApp: this,
+      userInfo: this.userInfo
+    }
+  },
+
+  data() {
+    return {
+      userInfo: {
+        permissions: [],
+        name: ''
+      }
+    }
+  },
+
+  methods: {
+    getUserInfo () {
+      this.axios.get(...)
+        .then(({data}) =&gt; {
+          this.userInfo = Object.assign({}, this.userInfo, data);
+        })
+        .catch(error =&gt; {
+          ...
+        })
+    }
+  },
+
+  created () {
+    this.getUserInfo();
+  }
+}
+...
+
+// app.vue -&gt; a.vue -&gt; b.vue -&gt; ... -&gt; z.vue
+...
+export default {
+  inject: ['rootApp', 'userInfo'],
+
+  methods: {
+    showAppName () {
+      console.log(this.rootApp, this.userInfo);  // 数据是可响应的
+    }
+  }
+}
+
+
+</code></pre>
+<p>向后代注入可监听的对象，我们有三种方法:</p>
+<ul>
+<li>直接返回 this</li>
+<li>返回 data 中 <strong>已定义</strong> 的对象</li>
+<li>通过 Vue.obervable() 优化响应式</li>
+</ul>
+<h2 id="6-listener-attrs">6. $listener / $attrs</h2>
+<h2 id="7-children-parents">7. $children / $parents</h2>
+<h2 id="8-ref">8. ref</h2>
+<h2 id="9-broadcase-dispatch">9. broadcase / dispatch</h2>
+<h2 id="10-vueextend-模拟-vuex">10. Vue.extend 模拟 vuex</h2>
+<h2 id="11-vueobservable-模拟-vuex">11. Vue.observable 模拟 vuex</h2>
+
+            </div>
+            
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>
