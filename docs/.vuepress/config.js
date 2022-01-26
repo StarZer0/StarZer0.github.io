@@ -10,4 +10,3 @@ module.exports = {
         logo: 'https://vuejs.org/images/logo.png'
     }
 };
-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;
